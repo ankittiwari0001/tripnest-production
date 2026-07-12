@@ -11,6 +11,7 @@ import SavedPlacesGrid from "@/components/dashboard/SavedPlacesGrid";
 
 import useSavedPlaces from "@/hooks/useSavedPlaces";
 import { useAuthStore } from "@/store/authStore";
+import RecentBookings from "@/components/dashboard/v2/RecentBookings";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -37,6 +38,8 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <QuickActions />
+
+      <RecentBookings />
 
       {/* Continue Journey */}
       <ContinueJourney />

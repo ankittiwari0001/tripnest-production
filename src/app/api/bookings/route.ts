@@ -6,176 +6,55 @@ import {
 import { connectDB } from "@/lib/db";
 
 import Booking from "@/models/Booking";
-
+import { bookingService } from "@/services/bookings/booking.service";
 import Hotel from "@/models/Hotel";
 
 import { verifyToken } from "@/lib/auth";
 
-export async function POST(
-  req: NextRequest
-) {
-
+export async function POST(req: NextRequest) {
   try {
-
     await connectDB();
 
-    const token =
-      req.headers
-        .get("authorization")
-        ?.replace(
-          "Bearer ",
-          ""
-        );
-
-    console.log(
-      "AUTH HEADER:",
-      req.headers.get("authorization")
-    );
+    const token = req.headers
+      .get("authorization")
+      ?.replace("Bearer ", "");
 
     if (!token) {
-
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Unauthorized",
+          message: "Unauthorized",
         },
-
-        {
-          status: 401,
-        }
+        { status: 401 }
       );
     }
 
-    const decoded =
-      verifyToken(token);
+    const decoded = verifyToken(token);
 
     if (!decoded) {
-
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Invalid token",
+          message: "Invalid token",
         },
-
-        {
-          status: 401,
-        }
+        { status: 401 }
       );
     }
 
-    const body =
-      await req.json();
+    const body = await req.json();
 
-    const {
-      hotelId,
-      checkIn,
-      checkOut,
-      guests,
-    } = body;
-
-    /* FIND HOTEL */
-
-    const hotel =
-      await Hotel.findById(
-        hotelId
-      );
-
-    if (!hotel) {
-
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Hotel not found",
-        },
-
-        {
-          status: 404,
-        }
-      );
-    }
-
-    /* TOTAL PRICE */
-
-    /* DATE VALIDATION */
-
-const checkInDate =
-  new Date(checkIn);
-
-const checkOutDate =
-  new Date(checkOut);
-
-if (
-  checkOutDate <=
-  checkInDate
-) {
-  return NextResponse.json(
-    {
-      success: false,
-      message:
-        "Check-out date must be after check-in date",
-    },
-    {
-      status: 400,
-    }
-  );
-}
-
-/* TOTAL NIGHTS */
-
-const oneDay =
-  1000 * 60 * 60 * 24;
-
-const totalNights =
-  Math.ceil(
-    (
-      checkOutDate.getTime() -
-      checkInDate.getTime()
-    ) / oneDay
-  );
-
-/* TOTAL PRICE */
-
-const totalPrice =
-  hotel.price *
-  totalNights;
-
-    /* CREATE BOOKING */
-
-  const booking =
-  await Booking.create({
-    userId:
-      decoded.id,
-
-    hotelId,
-
-    checkIn,
-
-    checkOut,
-
-    guests,
-
-    totalPrice,
-
-    bookingStatus:
-      "Confirmed",
-
-    paymentStatus:
-      "Pending",
-  });
+    const booking =
+      await bookingService.createBooking({
+        userId: decoded.id,
+        ...body,
+      });
 
     return NextResponse.json(
       {
         success: true,
-
-        message:
-          "Booking successful 🚀",
-
+        message: "Booking created successfully",
         booking,
       },
-
       {
         status: 201,
       }
@@ -183,21 +62,20 @@ const totalPrice =
 
   } catch (error) {
 
-    console.log(error);
+    console.error(error);
 
     return NextResponse.json(
       {
         success: false,
-
         message:
-          "Booking failed",
+          error instanceof Error
+            ? error.message
+            : "Booking failed",
       },
-
       {
         status: 500,
       }
     );
-
   }
 }
 

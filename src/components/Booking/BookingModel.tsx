@@ -6,6 +6,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import toast from "react-hot-toast";
+import { useBooking } from "@/hooks/useBooking";
 
 interface Props {
 
@@ -35,6 +36,9 @@ export default function BookingModal({
   const [loading, setLoading] =
     useState(false);
   const router = useRouter();
+  const {
+  createBooking,
+} = useBooking();
 
   async function handleBooking() {
 
@@ -67,40 +71,12 @@ export default function BookingModal({
         return;
       }
 
-      const res =
-        await fetch(
-          "/api/bookings",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              Authorization:
-                `Bearer ${token}`,
-            },
-
-            body: JSON.stringify({
-              hotelId,
-              checkIn,
-              checkOut,
-              guests,
-            }),
-          }
-        );
-
-      const data =
-        await res.json();
-
-      if (!res.ok) {
-
-        toast.error(
-          data.message
-        );
-
-        return;
-      }
+      await createBooking.mutateAsync({
+        hotelId,
+        checkIn,
+        checkOut,
+        guests,
+      });
 
       toast.success(
         "Booking confirmed 🚀"

@@ -5,14 +5,43 @@ import mongoose, {
   Document,
 } from "mongoose";
 
+import { useBooking } from "@/hooks/useBooking";
+
+/* -----------------------------
+   Booking & Payment Status
+------------------------------ */
+
+export const BOOKING_STATUS = [
+  "Pending",
+  "Confirmed",
+  "Completed",
+  "Cancelled",
+] as const;
+
+export const PAYMENT_STATUS = [
+  "Pending",
+  "Paid",
+  "Failed",
+  "Refunded",
+] as const;
+
+export type BookingStatus =
+  (typeof BOOKING_STATUS)[number];
+
+export type PaymentStatus =
+  (typeof PAYMENT_STATUS)[number];
+
+/* -----------------------------
+   Booking Interface
+------------------------------ */
+
 export interface IBooking
   extends Document {
+  bookingNumber: string;
 
-  userId:
-    mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
 
-  hotelId:
-    mongoose.Types.ObjectId;
+  hotelId: mongoose.Types.ObjectId;
 
   checkIn: Date;
 
@@ -20,37 +49,50 @@ export interface IBooking
 
   guests: number;
 
+  pricePerNight: number;
+
+  totalNights: number;
+
   totalPrice: number;
 
-  paymentStatus: string;
+  bookingStatus: BookingStatus;
 
-  bookingStatus: string;
+  paymentStatus: PaymentStatus;
+
+  specialRequest: string;
+
+  cancelReason?: string;
+
+  cancelledAt?: Date;
 
   createdAt: Date;
 
   updatedAt: Date;
 }
 
+/* -----------------------------
+   Booking Schema
+------------------------------ */
+
 const BookingSchema =
   new Schema<IBooking>(
     {
+      bookingNumber: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+      },
+
       userId: {
-        type:
-          mongoose.Schema.Types
-            .ObjectId,
-
+        type: Schema.Types.ObjectId,
         ref: "User",
-
         required: true,
       },
 
       hotelId: {
-        type:
-          mongoose.Schema.Types
-            .ObjectId,
-
+        type: Schema.Types.ObjectId,
         ref: "Hotel",
-
         required: true,
       },
 
@@ -67,42 +109,79 @@ const BookingSchema =
       guests: {
         type: Number,
         required: true,
+        min: 1,
+        max: 10,
+      },
+
+      pricePerNight: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+
+      totalNights: {
+        type: Number,
+        required: true,
+        min: 1,
       },
 
       totalPrice: {
         type: Number,
         required: true,
-      },
-
-      paymentStatus: {
-        type: String,
-
-        enum: [
-          "Pending",
-          "Paid",
-          "Failed",
-        ],
-
-        default: "Pending",
+        min: 0,
       },
 
       bookingStatus: {
         type: String,
-
-        enum: [
-          "Pending",
-          "Confirmed",
-          "Cancelled",
-        ],
-
+        enum: BOOKING_STATUS,
         default: "Pending",
       },
-    },
 
+      paymentStatus: {
+        type: String,
+        enum: PAYMENT_STATUS,
+        default: "Pending",
+      },
+
+      specialRequest: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      cancelReason: {
+        type: String,
+        default: "",
+      },
+
+      cancelledAt: {
+        type: Date,
+      },
+    },
     {
       timestamps: true,
     }
   );
+
+/* -----------------------------
+   Indexes
+------------------------------ */
+
+BookingSchema.index({
+  userId: 1,
+});
+
+BookingSchema.index({
+  hotelId: 1,
+});
+
+BookingSchema.index({
+  bookingStatus: 1,
+});
+
+/* -----------------------------
+   Model
+------------------------------ */
 
 const Booking =
   models.Booking ||
